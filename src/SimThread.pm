@@ -62,8 +62,26 @@ has 'ins_count' => (
 		_reset_ins => 'reset',
 	},
     );
-     
-     
+
+has 'run_branch_decisions' => (
+	traits => ['Array'],
+	is => 'rw',
+	isa => 'ArrayRef[Int]',
+	default => sub { [ ] },
+	handles => {
+		pop_branch_decision => 'pop',
+	},
+    );
+
+has 'run_loop_decisions' => (
+	traits => ['Array'],
+	is => 'rw',
+	isa => 'ArrayRef[Int]',
+	default => sub { [ ] },
+	handles => {
+		pop_loop_decision => 'pop',
+	},
+    );
 
 sub reset {
 	my $self = shift;
@@ -104,7 +122,11 @@ sub step {
 	my $next = $tnext;
 	if ($iters == 0 && $fnext) {
 		# There's a decision to be made
-		my $true = int(rand(2));
+		my $true = $self->pop_branch_decision();
+		if (!defined($true)) {
+			warn "Random branch decision made";
+			$true = int(rand(2));
+		}
 		$next = ($fnext, $tnext)[$true];
 	}
 		
@@ -116,7 +138,11 @@ sub step {
 			$c = $self->loop_count();
 		} else {
 			# New loop
-			$c = int(rand($iters)) + 1;
+			$c = $self->pop_loop_decision();
+			if (!defined($c)) {
+				warn "Random loop iteration decision made";
+				$c = int(rand($iters)) + 1;
+			}
 			$self->_set_loop_start($addr);
 			$self->_set_looping(1);
 		}

@@ -33,9 +33,10 @@ sub main {
 		pod2usage(1);
 		return 1;
 	}
-	my ($clines, $sched, $prog, $threads);
+	my ($clines, $decision, $sched, $prog, $threads);
 	$clines = $args{clines};
 	$sched = $args{sched};
+	$decision = $args{decision};
 	{
 		my @keys = keys(%{$args{prog}});
 		$prog = $keys[0];
@@ -44,11 +45,28 @@ sub main {
 	print $vout "Program File (Threads): $prog ($threads)\n";
 	print $vout "Cache Size: $clines\n";
 	print $vout "Scheduler: $sched\n";
+	print $vout "Decision File: $decision\n";
+
+	my (@dbranch, @dloop);
+	if ($decision) {
+		my ($fh, $line);
+		open($fh, "<$decision");
+		$line = <$fh>; chomp($line);
+		@dbranch = split(/\s+/, $line);
+		print $vout "Branch decisions: " . join(", ", @dbranch) . "\n";
+		$line = <$fh>; chomp($line);
+		@dloop = split(/\s+/, $line);
+		print $vout "Loop decisions: " . join(", ", @dloop) . "\n";
+		close($fh);
+	}
 
 	my $p = new Prog(file => $prog);
 	print $vout "Program object file: " . $p->file() . ": \n";
 	$p->print($vout);
+
+
 	# Arguments Parsed
+
 
 	# Create the cache
 	my $cache = Cache->new('lines', $clines);
@@ -56,7 +74,12 @@ sub main {
 	# Create the threads
 	my @threads;
 	for (1..$threads) {
-		push @threads, new SimThread(prog => $p, name => "t$_");
+		my (@db, @dl);
+		@db = @dbranch;
+		@dl = @dloop;
+		push @threads, new SimThread(prog => $p, name => "t$_",
+					     run_branch_decisions=>\@db,
+					     run_loop_decisions=>\@dl);
 	}
 
 	my $conflicts;
@@ -268,7 +291,7 @@ sub parse_args {
 	my $rv = GetOptions("l|cache-lines=i" => \$href->{clines},
 			    "s|scheduler=s" => \$href->{sched},
 			    "p|program=s%" =>  \$href->{prog},
-			    "r|report=f" => \$href->{report},
+			    "d|decision=s" => \$href->{decision},
 			    "verbose" => \$href->{verbose}
 	    );
 
@@ -302,7 +325,7 @@ sub parse_args {
 # Registers a context switch
 #
 use vars qw/$CTX_SWITCHES/;
-$CTX_SWITCHES = 0;
+$CTX_SWITCHES = 0; # First switch doesn't count
 sub ctx_switch_up {
 	$CTX_SWITCHES++;
 }
@@ -344,6 +367,10 @@ executes one thread after another, "bundle" corresponds to BUNDLE, and
 
 The program file described below and the number of threads it releases
 on startup.
+
+=item -d|--decision <file>
+
+A list of branching and looping decisions used when running a program.
 
 =item --usage
 
