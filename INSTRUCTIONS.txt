@@ -139,8 +139,16 @@ with parallel execution it will take a while to finish.
   #
   # Go get a cup of coffee ... 
   #
-  
-
+  Sched. Cache Avg Misses (t=#threads #misses)
+	 Lines
+  seq    64     (t=1  5531) (t=2 11063) (t=4 22127) (t=8 44255) (t=16 88510)
+  seq    64     (t=1  5531) (t=2 11063) (t=4 22127) (t=8 44255) (t=16 88510)
+  #
+  # << SNIP >>
+  #
+  bundle 1024   (t=1   769) (t=2   769) (t=4   769) (t=8   769) (t=16   769)
+  bundle 1024   (t=1   769) (t=2   769) (t=4   769) (t=8   769) (t=16   769)
+       
   A simple comparison of averages is presented as the product of
 running the test (~/pathsim/res/summary.txt). Also within the res
 directory are the cumulative results (~/pathsim/test/res/cum-*), the
